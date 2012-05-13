@@ -11,8 +11,9 @@
 - (ABAddressBookRef)addressBook;
 @end
 
-@interface ABMembersDataSource : NSObject <UITableViewDataSource>
+@interface ABMembersDataSource : NSObject <UITableViewDataSource, UIActionSheetDelegate>
 - (ABModel *)model;
+- (void)deleteContact;
 @end
 
 @interface ABMembersController : NSObject
