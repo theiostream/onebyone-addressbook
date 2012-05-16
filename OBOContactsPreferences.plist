@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<plist version="1.0">
+<dict>
+   <key>entry</key>
+   <dict>
+      <key>cell</key>
+         <string>PSLinkCell</string>
+         <key>icon</key>
+         <string>OBOContacts.png</string>
+         <key>label</key>
+         <string>OneByOne Contacts</string>
+      </dict>
+      
+      <key>items</key>
+      <array>
+		<dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>am.theiostre.obo_contacts</string>
+            <key>key</key>
+            <string>OBOCAlertView</string>
+            <key>label</key>
+            <string>Confirm delete</string>
+            <key>PostNotification</key>
+            <string>am.theiostre.obo_contacts.reload</string>
+         </dict>
+		
+		<dict>
+         	<key>cell</key>
+         	<string>PSGroupCell</string>
+         	<key>label</key>
+         	<string>Status Bar</string>
+         </dict>
+         
+         <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>am.theiostre.obo_contacts</string>
+            <key>key</key>
+            <string>OBOCEditButton</string>
+            <key>label</key>
+            <string>Edit button</string>
+            <key>PostNotification</key>
+            <string>am.theiostre.obo_contacts.reload</string>
+         </dict>
+         
+         <dict>
+         	<key>cell</key>
+         	<string>PSGroupCell</string>
+         	<key>footerText</key>
+         	<string>Idea by Ariel Aouizerate, and coded by theiostream.</string>
+         </dict>
+      </array>
+      
+      <key>title</key>
+      <string>OneByOne Contacts</string>
+   </dict>
+</plist>
