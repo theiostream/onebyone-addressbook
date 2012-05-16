@@ -8,6 +8,10 @@
 static NSDictionary *contactsPrefs = nil;
 static id g_membersViewController = nil;
 static NSInteger g_globalRow = -1;
+static BOOL g_isEditing = NO;
+
+/* **********
+*********** */
 
 static void OBOContactsUpdatePrefs() {
 	NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/am.theiostre.obo_contacts.plist"];
@@ -27,6 +31,43 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 	return v ? [v boolValue] : def;
 }
 
+/* **********
+*********** */
+
+%hook ABMemberCell
+%new
+- (NSArray *)namePieces {
+	NSArray *_np = MSHookIvar<NSArray *>(self, "_namePieces");
+	return _np;
+}	
+
+%new
+- (NSString *)namePieceForIndex:(NSUInteger)index {
+	NSArray *np = [self namePieces];
+	return [np objectAtIndex:index];
+}
+
+%new
+- (void)setNamePiece:(NSUInteger)index toName:(NSString *)name {
+	NSMutableArray *_np = [NSMutableArray arrayWithArray:[self namePieces]];
+	
+	[_np replaceObjectAtIndex:index withObject:name];
+	[self setNamePieces:_np];
+	
+	[self setNeedsDisplay];
+}
+
+%new
+- (void)adaptToEditing {
+	NSString *fn = [self namePieceForIndex:0];
+	NSString *firstName = (g_isEditing ?
+		[@"\t\t\t\t\t\t" stringByAppendingString:fn] :
+		[fn stringByReplacingOccurrencesOfString:@"\t" withString:@""]);
+	
+	[self setNamePiece:0 toName:firstName];
+}
+%end
+
 %hook ABMembersViewController
 - (id)initWithModel:(id)arg1 {
 	if ((self = %orig))
@@ -35,56 +76,60 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 	return self;
 }
 
-- (void)viewDidLoad {
-	%log;
+- (void)viewWillAppear:(BOOL)animated {
 	%orig;
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateEditButton) name:UIApplicationWillEnterForegroundNotification object:nil];
+	
+	[self updateEditButton];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	%orig;
+}
+
+%new
+- (void)updateEditButton {
+	UINavigationItem *navItem = [self navigationItem];
 	
 	if (OBOCGetBoolPref(@"OBOCEditButton", YES)) {
 		UIBarButtonItem *item = [[[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStyleBordered target:self action:@selector(startEditing:)] autorelease];
-		[[self navigationItem] setLeftBarButtonItem:item];
+		[navItem setLeftBarButtonItem:item];
+	}
+	
+	else {
+		NSString *buttonTitle = [[navItem leftBarButtonItem] title];
+		if ([buttonTitle isEqualToString:@"Edit"] || [buttonTitle isEqualToString:@"Done"]) {
+			[[[self membersController] tableView] setEditing:NO];
+			[navItem setLeftBarButtonItem:nil];
+		}
 	}
 }
 
 %new
 - (void)startEditing:(UIBarButtonItem *)item {
 	UITableView *tableView = [[self membersController] tableView];
-	BOOL isEditing = [tableView isEditing];
+	BOOL isEditing = ![tableView isEditing];
 	
-	[tableView setEditing:!isEditing animated:YES];
+	[tableView setEditing:isEditing animated:YES];
 	
-	[item setTitle:(isEditing ? @"Edit" : @"Done")];
-	[item setStyle:(isEditing ? UIBarButtonItemStyleBordered : UIBarButtonItemStyleDone)];
+	[item setTitle:(isEditing ? @"Done" : @"Edit")];
+	[item setStyle:(isEditing ? UIBarButtonItemStyleDone : UIBarButtonItemStyleBordered)];
+	
+	g_isEditing = isEditing;
 	
 	NSArray *visibleCells = [tableView visibleCells];
 	for (ABMemberCell *cell in visibleCells)
-		[cell refresh];
-}
-%end
-
-%hook ABMemberCell
-%new
-- (void)refresh {
-	NSArray *np = MSHookIvar<NSArray *>(self, "_namePieces");
-	NSString *fn = [np objectAtIndex:0];
-	
-	// FIXME: idk, just fixme.
-	NSString *firstName = ([self isEditing] ?
-		[@"\t\t\t\t\t\t" stringByAppendingString:fn] :
-		[fn stringByReplacingOccurrencesOfString:@"\t" withString:@""]);
-	
-	NSMutableArray *_np = [NSMutableArray arrayWithArray:np];
-	[_np replaceObjectAtIndex:0 withObject:firstName];
-	[self setNamePieces:_np];
-	
-	[self setNeedsDisplay];
+		[cell adaptToEditing];
 }
 %end
 
 %hook ABMembersDataSource
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	id orig = %orig;
-	if ([tableView isEditing])
-		[orig refresh];
+	if (g_isEditing) {
+		[orig adaptToEditing];
+	}
 		
 	return orig;
 }
@@ -125,6 +170,9 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 	[g_membersViewController personWasDeleted];
 }
 %end
+
+/* **********
+*********** */
 
 %ctor {
 	NSAutoreleasePool *p = [NSAutoreleasePool new];

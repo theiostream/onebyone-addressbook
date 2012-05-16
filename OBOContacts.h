@@ -24,9 +24,14 @@
 - (id)initWithModel:(ABModel *)model;
 - (ABMembersController *)membersController;
 - (void)personWasDeleted;
+- (void)updateEditButton;
 @end
 
 @interface ABMemberCell : UITableViewCell
-- (void)refresh;
 - (void)setNamePieces:(NSArray *)pieces;
+
+- (NSArray *)namePieces;
+- (NSString *)namePieceForIndex:(NSUInteger)index;
+- (void)setNamePiece:(NSUInteger)index toName:(NSString *)name;
+- (void)adaptToEditing;
 @end
