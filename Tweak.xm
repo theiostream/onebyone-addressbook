@@ -3,7 +3,21 @@
 
 /* TODO:
 2. (Huge) animation fix when there's time
+-- Draw rect instead of \t\t\t
+-- Find a way to refresh the tableview more nicely
+-- When we tap the Delete red stripe and cancel, shit happens.
 */
+
+// From IconSupport; I am on a BIG hurry sorry world.
+@interface UIDevice (OBOCPad)
+- (BOOL)isWildcat;
+@end
+#define isiPad() ([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
+
+#ifndef kCFCoreFoundationVersionNumber_iOS_6_0
+#define kCFCoreFoundationVersionNumber_iOS_6_0 793.00
+#endif
+#define isiOS6() (kCFCoreFoundationVersionNumber>=kCFCoreFoundationVersionNumber_iOS_6_0)
 
 static NSDictionary *contactsPrefs = nil;
 static id g_membersViewController = nil;
@@ -143,9 +157,11 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
 	if (editingStyle == UITableViewCellEditingStyleDelete) {
 		g_globalRow = [[tableView _rowData] globalRowForRowAtIndexPath:indexPath];
+		if (isiOS6() && !isiPad() && [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.mobilephone"])
+			g_globalRow--;
 		
 		if (OBOCGetBoolPref(@"OBOCAlertView", NO)) {
-			UIActionSheet *confirm = [[[UIActionSheet alloc] initWithTitle:@"Delete Contact" delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Delete" otherButtonTitles:nil] autorelease];
+			UIActionSheet *confirm = [[[UIActionSheet alloc] initWithTitle:@"Delete Contact?" delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Delete" otherButtonTitles:nil] autorelease];
 			[confirm setTag:1234];
 			[confirm showInView:tableView];
 			
@@ -169,6 +185,7 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 - (void)deleteContact {
 	ABModel *model = [self model];
 	ABAddressBookRef ab = [model addressBook];
+		
 	ABRecordRef person = [model displayedMemberAtIndex:g_globalRow];
 	
 	ABAddressBookRemoveRecord(ab, person, NULL);
