@@ -2,7 +2,7 @@
 #import "OBOContacts.h"
 
 /* TODO:
-2. (Huge) animation fix when there's time
+2. (Huge) animation fix when there's time (or if iOS 6 allows it?)
 -- Draw rect instead of \t\t\t
 -- Find a way to refresh the tableview more nicely
 -- When we tap the Delete red stripe and cancel, shit happens.
@@ -150,6 +150,9 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 
 %new(c@:@@)
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+	if ([[tableView _rowData] globalRowForRowAtIndexPath:indexPath] == 0 && isiOS6() && !isiPad() && [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.mobilephone"])
+		return NO;
+	
 	return OBOCGetBoolPref(@"OBOCEnabled", YES);
 }
 
