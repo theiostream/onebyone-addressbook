@@ -9,15 +9,17 @@
 */
 
 // From IconSupport; I am on a BIG hurry sorry world.
-@interface UIDevice (OBOCPad)
-- (BOOL)isWildcat;
-@end
-#define isiPad() ([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
+#define isiPad() ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
 
 #ifndef kCFCoreFoundationVersionNumber_iOS_6_0
 #define kCFCoreFoundationVersionNumber_iOS_6_0 793.00
 #endif
+#ifndef kCFCoreFoundationVersionNumber_iOS_7_0
+#define kCFCoreFoundationVersionNumber_iOS_7_0 800.00
+#endif
+
 #define isiOS6() (kCFCoreFoundationVersionNumber>=kCFCoreFoundationVersionNumber_iOS_6_0)
+#define isiOS7() (kCFCoreFoundationVersionNumber>=kCFCoreFoundationVersionNumber_iOS_6_0)
 
 static NSDictionary *contactsPrefs = nil;
 static id g_membersViewController = nil;
@@ -73,12 +75,21 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 
 %new(v@:)
 - (void)adaptToEditing {
-	NSString *fn = [self namePieceForIndex:0];
-	NSString *firstName = (g_isEditing ?
-		[@"\t\t\t\t\t\t" stringByAppendingString:fn] :
-		[fn stringByReplacingOccurrencesOfString:@"\t" withString:@""]);
-	
-	[self setNamePiece:0 toName:firstName];
+	if (!isiOS7()) {
+		NSString *fn = [self namePieceForIndex:0];
+		NSString *firstName = (g_isEditing ?
+			[@"\t\t\t\t\t\t" stringByAppendingString:fn] :
+			[fn stringByReplacingOccurrencesOfString:@"\t" withString:@""]);
+		
+		[self setNamePiece:0 toName:firstName];
+	}
+}
+%end
+
+%hook ABBannerView
+%new(v@:)
+- (void)adaptToEditing {
+	return;
 }
 %end
 
@@ -133,8 +144,9 @@ static BOOL OBOCGetBoolPref(NSString *key, BOOL def) {
 	g_isEditing = isEditing;
 	
 	NSArray *visibleCells = [tableView visibleCells];
-	for (ABMemberCell *cell in visibleCells)
+	for (ABMemberCell *cell in visibleCells) {
 		[cell adaptToEditing];
+	}
 }
 %end
 
